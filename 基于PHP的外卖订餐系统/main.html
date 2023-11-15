@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/html">
+<head>
+    <meta charset="UTF-8">
+    <title>饿死了吗外卖点单系统</title>
+    <!---------->
+    <style>
+
+        html {
+            height: 100%;
+        }
+
+        body{font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            /* 设置背景铺满 */
+            background-repeat:no-repeat;
+            background-size:100%;
+        }
+
+        .container {
+            height: 100%;
+            background-image: linear-gradient(to right, #fbc2eb, #a6c1ee);
+        }
+        #personal_center {
+            background-color: transparent;
+            color: #002ee7;
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s ease;
+        }
+
+        #personal_center:hover {
+            background-color: #45a049;
+        }
+
+        .button {
+            width: 150px;
+            height: 60px;
+            background-image: linear-gradient(to right, #a6c1ee, #fbc2eb);
+            color: #090606;
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .button:hover {
+            transform: scale(1.1);
+        }
+
+        .button:active {
+            transform: scale(0.9);
+        }
+    </style>
+</head>
+<body background="picture//背景图片.jpg">
+<div class="container">
+<script type="text/javascript" src="jQuery//jQueryFile.js"></script>
+
+<script type="text/javascript">
+    onload = function () {
+        //网页时钟相关区域
+        time2 = function () {
+            var v = new Date();
+            document.getElementById("clock").innerHTML = v.toLocaleString();
+        }
+        start = function () {
+            window.setInterval("time2()",1000);
+        }
+        start();
+
+        //进入页面时，多选默认是不选中的，也就是说，多选底下的加减框也是灰色的，具体加减框变不灰等点击多选框绑定
+        function f2(){
+            $(":checkbox").prop("checked",false);
+            $(".tr1 input,.tr2 input,.tr3 input").prop("disabled",true);
+        }
+        f2();
+
+
+        //给多选框绑定鼠标单击事件，
+        // 当初始值为空，对勾被打上时，下面加减和数字文本框由不可用变为可用。
+        // 当初始值为对勾被打上时，应该把数字框归零，然后在金额部分把这部分金额给减去，然后变为不可用。
+        $(":checkbox").click(
+            function () {
+                var c = this.checked;
+                var className = this.className;
+                className1 = ":text"+"[class = "+className + "]";
+                className = "."+className +":gt(0)";     //拼接字符串完成jQuery中的选择器。一大思维突破
+
+                $(className).prop("disabled",!c);
+
+                if(c==false){
+                    var number = parseInt($(className1).val());    //得到数目
+                    var one = parseFloat($(className1).attr("title")); //得到单价
+                    var money = parseFloat($("#money").text());      //得到此时金额的数目
+                    $("#money").text(money - (number*one));        //将金额区域的数字改为减去后的数字。
+                    $(className1).val("0");
+                }
+            }
+        )
+
+        //给减框绑定鼠标单击事件
+        $(":button[value = '-']").click(
+            function () {
+                var className = this.className;
+                className = "."+className+"[value = '-']";
+                var value = parseInt($(className).siblings(":text").val());
+                if(isNaN(value)){         //防止用户不给文本框赋值，直接按回车键。防止故意搞破坏。
+                    value = 0;
+                }
+                var number = value - 1;
+                if(number>=0){
+                    $(className).siblings(":text").val(number);
+                    var money = parseFloat($("#money").text()) - 1*parseFloat($(className).siblings(":text").attr("title")); //找到减框最近的text框，获取单价，然后给金额减一个单价。
+                    $("#money").text(money);
+                }else{
+                    $(className).siblings(":text").val(0);
+                }
+
+            }
+        )
+        //给加框绑定鼠标单击事件
+        $(":button[value = '+']").click(
+            function () {
+                var className = this.className;
+                className = "."+className+"[value = '+']";
+                var value = parseInt($(className).siblings(":text").val());
+                if(isNaN(value)){         //防止用户不给文本框赋值，直接按回车键。防止故意搞破坏。
+                    value = 0;
+                }
+                var number = value + 1;
+                if(number>50){            //最大数值框中最大数值是50
+                    $(className).siblings(":text").val(50);
+                }else {
+                    $(className).siblings(":text").val(number);
+                    var c2 = parseFloat($(className).siblings(":text").attr("title"));
+                    var money = parseFloat($("#money").text()) + 1*c2;
+                    $("#money").text(money);
+                }
+
+            }
+        )
+
+        //现在就是金额方面，绑定的应该是text的value变化，金额就变化。
+        $(":text").bind("input propertychange",function () {
+            var money = 0;
+            $(":text").each(
+                function (index,obj) {
+                    var value = parseInt(obj.value);
+                    if(isNaN(value)){         //经过检测，当文本框清空且没有输入时，对应上面转化为数字的value为NAN，所以这边加一个判定条件来使用户体验更好
+                        value = 0;
+                        obj.value = "0";
+                    }
+                    var id = parseFloat(obj.title);
+                    money += value*id;
+                }
+            );
+            $("#money").text(money);
+        });
+
+        //重置按钮
+        $("#reset").click(
+            function () {
+                $(":text").val("0");      //text框中value归零
+                $("#money").text("0");   //金额归零
+                $(":text").prop("disabled",true);   //文本框设置为不可用
+                $(":button[value='-'],:button[value='+']").prop("disabled",true);  //加减框也设置为不可用。
+                $(":checkbox").prop("checked",false); //多选框选中状态设为false.
+            }
+        );
+        //提交按钮
+        $("#submit").click(
+            function () {
+                var money = $("#money").text();
+                var ok = window.confirm("确认提交? 总金额"+money+"元");
+                if(ok == true){
+                    alert("提交成功！");
+                    $(":text").val("0");      //text框中value归零
+                    $("#money").text("0");   //金额归零
+                    $(":text").prop("disabled",true);   //文本框设置为不可用
+                    $(":button[value='-'],:button[value='+']").prop("disabled",true);//加减框也设置为不可用。
+                    $(":checkbox").prop("checked",false); //多选框选中状态设为false.
+                }
+            }
+        );
+
+        //用户登录的每一个整点刷新页面
+        var date = new Date();//现在时刻
+        var dateIntegralPoint = new Date();//用户登录时刻的下一个整点，也可以设置成某一个固定时刻
+        dateIntegralPoint.setHours(date.getHours()+1);//小时数增加1
+        dateIntegralPoint.setMinutes(0);
+        dateIntegralPoint.setSeconds(0);
+        setTimeout(nextIntegralPointAfterLogin,dateIntegralPoint-date);//用户登录后的下一个整点执行。
+        function nextIntegralPointAfterLogin(){
+            location.reload();//在整点执行的函数，在每个整点都调用该函数
+            setInterval(location.reload,60*60*1000);//一个小时执行一次，那么下一个整点，下下一个整点都会执行
+
+        }
+
+    }
+</script>
+
+<script>
+    //获取username
+    function getCookie(name){
+        var arr, reg = new RegExp("(^| )" + name + "=([^;]*)(;|$)");
+        if (arr = document.cookie.match(reg)){
+            return (arr[2]);
+        }else{
+            return "null";
+        }
+    }
+    function checkUsername() {
+        var username = getCookie('username');
+        if (username !== "null") {
+            location.href = "personalcenter.php";
+        }else {
+            alert("您还未登录，请登录");
+            location.href = "login.html";
+        }
+    }
+</script>
+<!--<a href="personalcenter.php" onclick="checkUsername()">个人中心</a>-->
+<div><button id="personal_center" onclick="checkUsername()">个人中心</button></div>
+<center>
+    <h1>饿死了吗外卖点单系统</h1>
+    <HR width="80%" color="coral">
+</center>
+<div id="clock" style="float: right;margin-right: 50px;font-size: 22px"></div><br><br>
+<br>
+<div align="center" style="font-size: 30px;font-weight: 700;color: green" id="time"></div>
+    <center>
+        <form action="main.php" method="post">
+        <table cellpadding="20px" id="table">
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td>
+                        <h2>早餐区域</h2>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <img  src="./picture/早餐_肉包.jpg" width="300px" height="300px" title="肉包子" alt="图片加载不出来" >
+                    </td>
+                    <td>
+                        <img  src="./picture/早餐_肉饺.jpg" width="300px" height="300px" title="肉饺子" alt="图片加载不出来" >
+                    </td>
+                    <td>
+                        <img  src="./picture/早餐_菜包.jpg" width="300px" height="300px" title="菜包子" alt="图片加载不出来" >
+                    </td>
+                    <td>
+                        <img  src="./picture/早餐_拼盘.jpg" width="350px" height="320px" title="拼盘" alt="图片加载不出来" >
+                    </td>
+                    <td>
+                        <img  src="./picture/早餐_白粥.jpg" width="350px" height="320px" title="白粥" alt="图片加载不出来" >
+                    </td>
+                    <td>
+                        <img  src="./picture/早餐_豆浆.jpg" width="350px" height="320px" title="豆浆" alt="图片加载不出来" >
+                    </td>
+                </tr>
+                <tr>
+                    <th>
+                        <input type="checkbox" style="width: 20px;height: 18px" class="s1" title="点击以选择肉包子">肉包(2元/个)
+                    </th>
+                    <th>
+                        <input type="checkbox" style="width: 20px;height: 18px" class="s2" title="点击以选择肉饺子">肉饺（0.5元/个）
+                    </th>
+                    <th>
+                        <input type="checkbox" style="width: 20px;height: 18px" class="s3" title="点击以选择菜包子">菜包（1元/个）
+                    </th>
+                    <th>
+                        <input type="checkbox" style="width: 20px;height: 18px" class="s4" title="点击以选择拼盘">拼盘（6元/份）
+                    </th>
+                    <th>
+                        <input type="checkbox" style="width: 20px;height: 18px" class="s5" title="点击以选择白粥">白粥（0.5元/份）
+                    </th>
+                    <th>
+                        <input type="checkbox" style="width: 20px;height: 18px" class="s6" title="点击以选择豆浆">豆浆（1元/份）
+                    </th>
+                </tr>
+                <tr>
+                    <th >
+                        <input type="button" value="-" style="height: 22px;width: 22px" class="s1">
+                        <input type="text" style="height: 18px;width: 14px;font-size: 12px;text-align: center" value="0" class="s1" title="2" name="s1" oninput="if(value>50)value=50;value=value.replace(/[^\d]/g,'')">
+                        <input type="button" value="+" class="s1">
+                    </th>
+                    <th class="s2">
+                        <input type="button" value="-" style="height: 22px;width: 22px" class="s2">
+                        <input type="text" style="height: 18px;width: 14px;font-size: 12px;text-align: center" value="0" class="s2" title="0.5" name="s2" oninput="if(value>50)value=50;value=value.replace(/[^\d]/g,'')">
+                        <input type="button" value="+" class="s2">
+                    </th>
+                    <th class="s3">
+                        <input type="button" value="-" style="height: 22px;width: 22px" class="s3">
+                        <input type="text" style="height: 18px;width: 14px;font-size: 12px;text-align: center" value="0" class="s3" title="1" name="s3" oninput="if(value>50)value=50;value=value.replace(/[^\d]/g,'')">
+                        <input type="button" value="+" class="s3">
+                    </th>
+                    <th class="s4">
+                        <input type="button" value="-" style="height: 22px;width: 22px" class="s4">
+                        <input type="text" style="height: 18px;width: 14px;font-size: 12px;text-align: center" value="0" class="s4" title="6" name="s4" oninput="if(value>50)value=50;value=value.replace(/[^\d]/g,'')">
+                        <input type="button" value="+" class="s4">
+                    </th>
+                    <th class="s5">
+                        <input type="button" value="-" style="height: 22px;width: 22px" class="s4">
+                        <input type="text" style="height: 18px;width: 14px;font-size: 12px;text-align: center" value="0" class="s5" title="0.5" name="s5" oninput="if(value>50)value=50;value=value.replace(/[^\d]/g,'')">
+                        <input type="button" value="+" class="s5">
+                    </th>
+                    <th class="s6">
+                        <input type="button" value="-" style="height: 22px;width: 22px" class="s4">
+                        <input type="text" style="height: 18px;width: 14px;font-size: 12px;text-align: center" value="0" class="s6" title="1" name="s6" oninput="if(value>50)value=50;value=value.replace(/[^\d]/g,'')">
+                        <input type="button" value="+" class="s6">
+                    </th>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td>
+                        <h2>午餐区域</h2>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <img  src="picture//午餐_米饭.jpg" width="300px" height="300px" title="米饭" alt="图片加载不出来" >
+                    </td>
+                    <td>
+                        <img  src="picture//午餐_爱心便当.jpg" width="300px" height="300px" title="爱心便当" alt="图片加载不出来" >
+                    </td>
+                    <td>
+                        <img  src="picture//午餐_烧鱼.jpg" width="300px" height="300px" title="烧鱼" alt="图片加载不出来" >
+                    </td>
+                    <td>
+                        <img  src="picture//午餐_牛肉串.jpg" width="300px" height="300px" title="牛肉串" alt="图片加载不出来" >
+                    </td>
+                    <td>
+                        <img  src="picture//午餐_火腿.jpg" width="300px" height="300px" title="火腿" alt="图片加载不出来" >
+                    </td>
+                    <td>
+                        <img  src="picture//午餐_出水芙蓉.jpg" width="300px" height="300px" title="出水芙蓉" alt="图片加载不出来" >
+                    </td>
+                </tr>
+                <tr>
+                    <th>
+                        <input type="checkbox" style="width: 20px;height: 18px" class="s7" title="点击以选择米饭">米饭(0.5元/份)
+                    </th>
+                    <th>
+                        <input type="checkbox" style="width: 20px;height: 18px" class="s8" title="点击以选择便当">爱心便当（7元/份）
+                    </th>
+                    <th>
+                        <input type="checkbox" style="width: 20px;height: 18px" class="s9" title="点击以选择烧鱼">烧鱼（5元/块）
+                    </th>
+                    <th>
+                        <input type="checkbox" style="width: 20px;height: 18px" class="s10" title="点击以选择炸串">牛肉串（0.5元/串）
+                    </th>
+                    <th>
+                        <input type="checkbox" style="width: 20px;height: 18px" class="s11" title="点击以选择火腿">火腿（1元/切片）
+                    </th>
+                    <th>
+                        <input type="checkbox" style="width: 20px;height: 18px" class="s12" title="点击以选择出水芙蓉">出水芙蓉（3元/份）
+                    </th>
+                </tr>
+                <tr>
+                    <th>
+                        <input type="button" value="-" style="height: 22px;width: 22px" class="s7">
+                        <input type="text" style="height: 18px;width: 14px;font-size: 12px;text-align: center" value="0" class="s7" title="0.5" name="s7" oninput="if(value>50)value=50;value=value.replace(/[^\d]/g,'')">
+                        <input type="button" value="+" class="s7">
+                    </th>
+                    <th>
+                        <input type="button" value="-" style="height: 22px;width: 22px" class="s8">
+                        <input type="text" style="height: 18px;width: 14px;font-size: 12px;text-align: center" value="0" class="s8" title="7" name="s8" oninput="if(value>50)value=50;value=value.replace(/[^\d]/g,'')">
+                        <input type="button" value="+" class="s8">
+                    </th>
+                    <th>
+                        <input type="button" value="-" style="height: 22px;width: 22px" class="s9">
+                        <input type="text" style="height: 18px;width: 14px;font-size: 12px;text-align: center" value="0" class="s9" title="5" name="s9" oninput="if(value>50)value=50;value=value.replace(/[^\d]/g,'')">
+                        <input type="button" value="+" class="s9">
+                    </th>
+                    <th>
+                        <input type="button" value="-" style="height: 22px;width: 22px" class="s10">
+                        <input type="text" style="height: 18px;width: 14px;font-size: 12px;text-align: center" value="0" class="s10" title="0.5" name="s10" oninput="if(value>50)value=50;value=value.replace(/[^\d]/g,'')">
+                        <input type="button" value="+" class="s10">
+                    </th>
+                    <th>
+                        <input type="button" value="-" style="height: 22px;width: 22px" class="s11">
+                        <input type="text" style="height: 18px;width: 14px;font-size: 12px;text-align: center" value="0" class="s11" title="1" name="s11" oninput="if(value>50)value=50;value=value.replace(/[^\d]/g,'')">
+                        <input type="button" value="+" class="s11">
+                    </th>
+                    <th>
+                        <input type="button" value="-" style="height: 22px;width: 22px" class="s12">
+                        <input type="text" style="height: 18px;width: 14px;font-size: 12px;text-align: center" value="0" class="s12" title="3" name="s12" oninput="if(value>50)value=50;value=value.replace(/[^\d]/g,'')">
+                        <input type="button" value="+" class="s12">
+                    </th>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td>
+                        <h2>晚餐区域</h2>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <img  src="picture//晚餐_米饭.jpg" width="300px" height="300px" title="米饭" alt="图片加载不出来" >
+                    </td>
+                    <td>
+                        <img  src="picture//晚餐_鱼肉火锅.jpg" width="300px" height="300px" title="鱼肉火锅" alt="图片加载不出来" >
+                    </td>
+                    <td>
+                        <img  src="picture//晚餐_烧鸡.jpg" width="300px" height="300px" title="烧鸡" alt="图片加载不出来" >
+                    </td>
+                    <td>
+                        <img  src="picture//晚餐_法式牛排.jpg" width="300px" height="300px" title="法式牛排" alt="图片加载不出来" >
+                    </td>
+                    <td>
+                        <img  src="picture//晚餐_卤鹅块.jpeg" width="300px" height="300px" title="卤鹅块" alt="图片加载不出来" >
+                    </td>
+                    <td>
+                        <img  src="picture//晚餐_拌面.jpeg" width="300px" height="300px" title="拌面" alt="图片加载不出来" >
+                    </td>
+                </tr>
+                <tr>
+                    <th>
+                        <input type="checkbox" style="width: 20px;height: 18px" class="s13" title="点击以选择米饭">米饭(0.5元/份)
+                    </th>
+                    <th>
+                        <input type="checkbox" style="width: 20px;height: 18px" class="s14" title="点击以选择鱼肉火锅">鱼肉火锅（10元/份）
+                    </th>
+                    <th>
+                        <input type="checkbox" style="width: 20px;height: 18px" class="s15" title="点击以选择烧鸡">烧鸡（10元/只）
+                    </th>
+                    <th>
+                        <input type="checkbox" style="width: 20px;height: 18px" class="s16" title="点击以选择牛排">法式牛排（10元/块）
+                    </th>
+                    <th>
+                        <input type="checkbox" style="width: 20px;height: 18px" class="s17" title="点击以选择鹅块">卤鹅块（5元/份）
+                    </th>
+                    <th>
+                        <input type="checkbox" style="width: 20px;height: 18px" class="s18" title="点击以选择拌面">拌面（6元/份）
+                    </th>
+                </tr>
+                <tr>
+                    <th>
+                        <input type="button" value="-" style="height: 22px;width: 22px" class="s13">
+                        <input type="text" style="height: 18px;width: 14px;font-size: 12px;text-align: center" value="0" class="s13" title="0.5" name="s13" oninput="if(value>50)value=50;value=value.replace(/[^\d]/g,'')"><!---用name来存储金额-->
+                        <input type="button" value="+" class="s13">
+                    </th>
+                    <th>
+                        <input type="button" value="-" style="height: 22px;width: 22px" class="s14">
+                        <input type="text" style="height: 18px;width: 14px;font-size: 12px;text-align: center" value="0" class="s14" title="10" name="s14" oninput="if(value>50)value=50;value=value.replace(/[^\d]/g,'')">
+                        <input type="button" value="+" class="s14">
+                    </th>
+                    <th>
+                        <input type="button" value="-" style="height: 22px;width: 22px" class="s15">
+                        <input type="text" style="height: 18px;width: 14px;font-size: 12px;text-align: center" value="0" class="s15" title="10" name="s15" oninput="if(value>50)value=50;value=value.replace(/[^\d]/g,'')">
+                        <input type="button" value="+" class="s15">
+                    </th>
+                    <th>
+                        <input type="button" value="-" style="height: 22px;width: 22px" class="s16">
+                        <input type="text" style="height: 18px;width: 14px;font-size: 12px;text-align: center" value="0" class="s16" title="10" name="s16" oninput="if(value>50)value=50;value=value.replace(/[^\d]/g,'')">
+                        <input type="button" value="+" class="s16">
+                    </th>
+                    <th>
+                        <input type="button" value="-" style="height: 22px;width: 22px" class="s17">
+                        <input type="text" style="height: 18px;width: 14px;font-size: 12px;text-align: center" value="0" class="s17" title="5" name="s17" oninput="if(value>50)value=50;value=value.replace(/[^\d]/g,'')">
+                        <input type="button" value="+" class="s17">
+                    </th>
+                    <th>
+                        <input type="button" value="-" style="height: 22px;width: 22px" class="s18">
+                        <input type="text" style="height: 18px;width: 14px;font-size: 12px;text-align: center" value="0" class="s18" title="6" name="s18" oninput="if(value>50)value=50;value=value.replace(/[^\d]/g,'')"><!---用户只能输入数字---->
+                        <input type="button" value="+" class="s18">
+                    </th>
+                </tr>
+
+         </table>
+        <input type="submit" value="加入购物车" class="button" style="width: 150px;height: 60px">
+        <input type="button" value="重置" class="button" style="width: 150px;height: 60px" id="reset">
+        </form>
+    </center>
+    <br>
+    <h2 style="float: left;margin-left: 80px">金额：</h2><br>
+    <div style="font-size: 22px" id="money">0</div>
+    <br><br>
+</div>
+</body>
+</html>
